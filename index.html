@@ -1,107 +1,112 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SPC Outlook - Clayton's Weather</title>
+  <title>CW Storm Center</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
   <style>
-    body { margin: 0; font-family: -apple-system, sans-serif; }
-    #map { height: 100vh; }
+    body { margin:0; font-family:-apple-system; background:#0b1e3c; }
+    #map { height:100vh; }
 
     .topbar {
-      position: absolute;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #0066cc;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 15px;
-      z-index: 1000;
+      position:absolute; top:10px; left:50%;
+      transform:translateX(-50%);
+      background:#0d3c8f; color:white;
+      padding:8px 16px; border-radius:12px;
+      z-index:1000;
     }
 
     .controls {
-      position: absolute;
-      top: 70px;
-      left: 15px;
-      background: white;
-      padding: 12px;
-      border-radius: 12px;
-      z-index: 1000;
-      width: 180px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      position:absolute; top:60px; left:10px;
+      background:rgba(10,30,70,0.95);
+      padding:8px; border-radius:12px;
+      z-index:1000; width:140px;
+      color:white; font-size:12px;
     }
 
     button {
-      width: 100%;
-      margin: 4px 0;
-      padding: 8px;
-      border: none;
-      border-radius: 8px;
-      background: #ddd;
-      cursor: pointer;
+      width:100%; margin:3px 0;
+      padding:6px; border:none;
+      border-radius:6px;
+      background:#1c3f80; color:white;
+      font-size:12px;
+      cursor:pointer;
     }
 
-    button.active {
-      background: #0066cc;
-      color: white;
+    .slider {
+      width:100%;
     }
 
-    /* SIDE PANEL */
+    .timestamp {
+      position:absolute;
+      bottom:10px;
+      left:50%;
+      transform:translateX(-50%);
+      background:rgba(0,0,0,0.6);
+      color:white;
+      padding:4px 10px;
+      border-radius:8px;
+      font-size:12px;
+      z-index:1000;
+    }
+
     .panel {
-      position: fixed;
-      top: 0;
-      right: -400px;
-      width: 400px;
-      height: 100%;
-      background: white;
-      transition: 0.3s;
-      z-index: 2000;
-      overflow-y: auto;
-      padding: 15px;
-      box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+      position:fixed; top:0; right:-100%;
+      width:100%; max-width:360px;
+      height:100%; background:#0b1e3c;
+      color:white; transition:0.3s;
+      z-index:2000; padding:12px;
+      overflow-y:auto;
     }
 
-    .panel.open { right: 0; }
+    .panel.open { right:0; }
 
     .close-btn {
-      float: right;
-      background: red;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 6px;
-      cursor: pointer;
+      float:right; background:red;
+      color:white; border:none;
+      padding:6px;
     }
 
+    .fronts-blend {
+      mix-blend-mode: multiply;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
 
-<div class="topbar">⚡ SPC Outlook | Clayton’s Weather</div>
+<div class="topbar">⚡ CW Storm Center</div>
 
 <div class="controls">
-  <b>Layer</b>
-  <button id="btn-cat" onclick="setLayer('cat')">Category</button>
-  <button id="btn-torn" onclick="setLayer('torn')">Tornado</button>
-  <button id="btn-wind" onclick="setLayer('wind')">Wind</button>
-  <button id="btn-hail" onclick="setLayer('hail')">Hail</button>
+  <button onclick="setLayer('cat')">SPC Cat</button>
+  <button onclick="setLayer('torn')">Tornado</button>
+  <button onclick="setLayer('wind')">Wind</button>
+  <button onclick="setLayer('hail')">Hail</button>
+
+  <button onclick="setDay(1)">Day 1</button>
+  <button onclick="setDay(2)">Day 2</button>
+  <button onclick="setDay(3)">Day 3</button>
 
   <hr>
 
-  <b>Day</b>
-  <button id="day1" onclick="setDay(1)">Day 1</button>
-  <button id="day2" onclick="setDay(2)">Day 2</button>
-  <button id="day3" onclick="setDay(3)">Day 3</button>
+  <button onclick="toggleRadar()">Radar</button>
+
+  <label>Opacity</label>
+  <input type="range" min="0.1" max="1" step="0.05" value="0.45"
+    class="slider" oninput="setRadarOpacity(this.value)">
+
+  <button onclick="toggleWarnings()">Alerts</button>
+  <button onclick="toggleFronts()">Fronts</button>
 </div>
 
+<div id="timestamp" class="timestamp">Radar Time</div>
+
 <div id="panel" class="panel">
-  <button class="close-btn" onclick="closePanel()">Close</button>
-  <h3>SPC Discussion</h3>
-  <pre id="panel-content">Click a region to load discussion...</pre>
+  <button class="close-btn" onclick="closePanel()">X</button>
+  <pre id="text">Click SPC or alerts...</pre>
 </div>
 
 <div id="map"></div>
@@ -109,50 +114,152 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-var map = L.map('map').setView([37.8, -96], 4);
+var map = L.map('map').setView([37.8,-96],4);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{zIndex:1}).addTo(map);
 
-let geojsonLayer;
-let currentDay = 1;
-let currentLayer = "cat";
+// ================= RADAR =================
+let radarLayers = [];
+let radarFrames = [];
+let radarIndex = 0;
+let radarOpacity = 0.45;
+let radarOn = false;
+let radarInterval;
 
-// COLORS
-function getCatColor(label) {
-  return {
-    "TSTM":"#A8E6A3","MRGL":"#5CC85C","SLGT":"#FFD84D",
-    "ENH":"#FF9A3D","MDT":"#FF4C4C","HIGH":"#FF00FF"
-  }[label] || "transparent";
+function loadRadar(){
+  fetch("https://api.rainviewer.com/public/weather-maps.json")
+    .then(r => r.json())
+    .then(data => {
+
+      radarFrames = data.radar.past.slice(-8);
+
+      radarLayers = radarFrames.map(frame =>
+        L.tileLayer(
+          `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+          { opacity: 0, zIndex: 1000 }
+        )
+      );
+
+      radarLayers.forEach(l => l.addTo(map));
+
+      radarLayers[0].setOpacity(radarOpacity);
+      updateTimestamp();
+
+      radarInterval = setInterval(() => {
+        radarLayers[radarIndex].setOpacity(0);
+        radarIndex = (radarIndex + 1) % radarLayers.length;
+        radarLayers[radarIndex].setOpacity(radarOpacity);
+        updateTimestamp();
+      }, 500);
+    });
 }
 
-function getProbColor(p) {
-  if (p>=60) return "#FF00FF";
-  if (p>=45) return "#E60000";
-  if (p>=30) return "#FF6600";
-  if (p>=15) return "#FFCC00";
-  if (p>=10) return "#FFFF66";
-  if (p>=5) return "#66CC66";
-  if (p>=2) return "#B2FFB2";
-  return "transparent";
+function updateTimestamp(){
+  let ts = radarFrames[radarIndex].time;
+  let date = new Date(ts * 1000);
+  document.getElementById("timestamp").textContent =
+    "Radar: " + date.toLocaleTimeString();
 }
 
-// BUTTON STATE
-function updateButtons() {
-  document.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
-  document.getElementById("btn-"+currentLayer).classList.add("active");
-  document.getElementById("day"+currentDay).classList.add("active");
+function setRadarOpacity(val){
+  radarOpacity = val;
+  radarLayers.forEach(l => l.setOpacity(0));
+  if(radarLayers[radarIndex]){
+    radarLayers[radarIndex].setOpacity(radarOpacity);
+  }
 }
 
-// LOAD SPC
-function loadSPC() {
+function toggleRadar(){
+  if(radarOn){
+    radarLayers.forEach(l => map.removeLayer(l));
+    clearInterval(radarInterval);
+  } else {
+    loadRadar();
+  }
+  radarOn = !radarOn;
+}
 
-  updateButtons();
+// ================= WARNINGS =================
+let warningsLayer, warningsOn=false;
 
-  if (geojsonLayer) map.removeLayer(geojsonLayer);
+function toggleWarnings(){
+  if(warningsOn){
+    map.removeLayer(warningsLayer);
+    warningsOn=false;
+    return;
+  }
 
-  let base = `https://www.spc.noaa.gov/products/outlook/day${currentDay}`;
+  fetch("https://api.weather.gov/alerts/active")
+    .then(r=>r.json())
+    .then(data=>{
+      warningsLayer = L.geoJson(data,{
+        style:{color:"red",weight:2,fillOpacity:0.15},
+        onEachFeature:(f,l)=>{
+          l.on("click", ()=>{
+            openPanel();
+            document.getElementById("text").textContent =
+              f.properties.event + "\n\n" + f.properties.description;
+          });
+        }
+      }).addTo(map);
+      warningsOn=true;
+    });
+}
 
-  let url = {
+// ================= FRONTS =================
+let frontsLayer, frontsOn=false;
+let frontsInterval;
+
+function toggleFronts(){
+  if(frontsOn){
+    map.removeLayer(frontsLayer);
+    clearInterval(frontsInterval);
+  } else {
+
+    let bounds = [[22,-125],[52,-65]];
+
+    function loadFronts(){
+      if(frontsLayer) map.removeLayer(frontsLayer);
+
+      frontsLayer = L.imageOverlay(
+        "https://www.wpc.ncep.noaa.gov/sfc/usfntsfcwbg.gif?" + Date.now(),
+        bounds,
+        { className:"fronts-blend", zIndex:500 }
+      ).addTo(map);
+    }
+
+    loadFronts();
+    frontsInterval = setInterval(loadFronts, 300000); // 5 min
+  }
+  frontsOn = !frontsOn;
+}
+
+// ================= SPC =================
+let spcLayer;
+let currentLayer="cat";
+let currentDay=1;
+
+function getCatColor(l){
+  return {"TSTM":"#A8E6A3","MRGL":"#5CC85C","SLGT":"#FFD84D",
+  "ENH":"#FF9A3D","MDT":"#FF4C4C","HIGH":"#FF00FF"}[l]||"transparent";
+}
+
+function getProbColor(p){
+  if(p>=60)return"#FF00FF";
+  if(p>=45)return"#E60000";
+  if(p>=30)return"#FF6600";
+  if(p>=15)return"#FFCC00";
+  if(p>=10)return"#FFFF66";
+  if(p>=5)return"#66CC66";
+  if(p>=2)return"#B2FFB2";
+}
+
+function loadSPC(){
+  if(spcLayer) map.removeLayer(spcLayer);
+
+  let base=`https://www.spc.noaa.gov/products/outlook/day${currentDay}`;
+
+  let url={
     cat:`${base}otlk_cat.lyr.geojson`,
     torn:`${base}otlk_torn.lyr.geojson`,
     wind:`${base}otlk_wind.lyr.geojson`,
@@ -160,65 +267,48 @@ function loadSPC() {
   }[currentLayer];
 
   fetch(url)
-    .then(r => r.json())
-    .then(data => {
-
-      geojsonLayer = L.geoJson(data, {
-
-        style: f => ({
+    .then(r=>r.json())
+    .then(data=>{
+      spcLayer = L.geoJson(data,{
+        style:f=>({
           fillColor: currentLayer==="cat"
             ? getCatColor(f.properties.LABEL)
             : getProbColor(f.properties.DN),
-          weight: 1,
-          color: "#333",
-          fillOpacity: 0.6
+          color:"#333", weight:1, fillOpacity:0.5
         }),
-
-        onEachFeature: (f, layer) => {
-          layer.on("click", () => {
+        onEachFeature:(f,l)=>{
+          l.on("click",()=>{
             openPanel();
-            loadDiscussion();
+            loadText();
           });
         }
-
       }).addTo(map);
-
-    })
-    .catch(() => {
-      alert("SPC DATA FAILED TO LOAD (likely GitHub Pages blocking it)");
     });
 }
 
-// PANEL
-function openPanel() {
-  document.getElementById("panel").classList.add("open");
-}
-
-function closePanel() {
-  document.getElementById("panel").classList.remove("open");
-}
-
-// TEXT (WITH FALLBACK)
-function loadDiscussion() {
-  let url = `https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk.txt`;
-
-  fetch(url)
-    .then(r => r.text())
-    .then(t => {
-      document.getElementById("panel-content").textContent = t;
-    })
-    .catch(() => {
-      document.getElementById("panel-content").textContent =
-        "⚠️ Unable to load SPC text.\n\nThis is usually caused by browser blocking.\n\nBut your map is still working.";
+function loadText(){
+  fetch(`https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk.txt`)
+    .then(r=>r.text())
+    .then(t=>{
+      document.getElementById("text").textContent=t;
     });
 }
 
-// CONTROLS
 function setLayer(l){ currentLayer=l; loadSPC(); }
 function setDay(d){ currentDay=d; loadSPC(); }
 
+// ================= UI =================
+function openPanel(){
+  document.getElementById("panel").classList.add("open");
+}
+
+function closePanel(){
+  document.getElementById("panel").classList.remove("open");
+}
+
 // INIT
 loadSPC();
+
 </script>
 
 </body>
