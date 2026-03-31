@@ -19,19 +19,48 @@
       z-index:1000;
     }
 
+    /* 🔥 COLLAPSIBLE SIDEBAR */
     .controls {
-      position:absolute; top:60px; left:10px;
+      position:absolute;
+      top:60px;
+      left:10px;
       background:rgba(10,30,70,0.95);
-      padding:8px; border-radius:12px;
-      z-index:1000; width:140px;
-      color:white; font-size:12px;
+      padding:8px;
+      border-radius:12px;
+      z-index:1000;
+      width:150px;
+      color:white;
+      font-size:12px;
+      transition:0.3s;
+    }
+
+    .controls.collapsed {
+      width:45px;
+      height:45px;
+      overflow:hidden;
+      padding:6px;
+    }
+
+    .toggle-btn {
+      background:#1a4db3;
+      border:none;
+      color:white;
+      width:100%;
+      padding:6px;
+      border-radius:6px;
+      margin-bottom:6px;
+      cursor:pointer;
+      font-size:14px;
     }
 
     button {
-      width:100%; margin:3px 0;
-      padding:6px; border:none;
+      width:100%;
+      margin:3px 0;
+      padding:6px;
+      border:none;
       border-radius:6px;
-      background:#1c3f80; color:white;
+      background:#1c3f80;
+      color:white;
       font-size:12px;
       cursor:pointer;
     }
@@ -54,19 +83,27 @@
     }
 
     .panel {
-      position:fixed; top:0; right:-100%;
-      width:100%; max-width:360px;
-      height:100%; background:#0b1e3c;
-      color:white; transition:0.3s;
-      z-index:2000; padding:12px;
+      position:fixed;
+      top:0;
+      right:-100%;
+      width:100%;
+      max-width:360px;
+      height:100%;
+      background:#0b1e3c;
+      color:white;
+      transition:0.3s;
+      z-index:2000;
+      padding:12px;
       overflow-y:auto;
     }
 
     .panel.open { right:0; }
 
     .close-btn {
-      float:right; background:red;
-      color:white; border:none;
+      float:right;
+      background:red;
+      color:white;
+      border:none;
       padding:6px;
     }
 
@@ -80,7 +117,9 @@
 
 <div class="topbar">⚡ CW Storm Center</div>
 
-<div class="controls">
+<div class="controls collapsed" id="controls">
+  <button class="toggle-btn" onclick="toggleControls()">☰</button>
+
   <button onclick="setLayer('cat')">SPC Cat</button>
   <button onclick="setLayer('torn')">Tornado</button>
   <button onclick="setLayer('wind')">Wind</button>
@@ -116,7 +155,12 @@
 <script>
 var map = L.map('map').setView([37.8,-96],4);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{zIndex:1}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// ================= COLLAPSE =================
+function toggleControls(){
+  document.getElementById("controls").classList.toggle("collapsed");
+}
 
 // ================= RADAR =================
 let radarLayers = [];
@@ -229,7 +273,7 @@ function toggleFronts(){
     }
 
     loadFronts();
-    frontsInterval = setInterval(loadFronts, 300000); // 5 min
+    frontsInterval = setInterval(loadFronts, 300000);
   }
   frontsOn = !frontsOn;
 }
@@ -244,37 +288,17 @@ function getCatColor(l){
   "ENH":"#FF9A3D","MDT":"#FF4C4C","HIGH":"#FF00FF"}[l]||"transparent";
 }
 
-function getProbColor(p){
-  if(p>=60)return"#FF00FF";
-  if(p>=45)return"#E60000";
-  if(p>=30)return"#FF6600";
-  if(p>=15)return"#FFCC00";
-  if(p>=10)return"#FFFF66";
-  if(p>=5)return"#66CC66";
-  if(p>=2)return"#B2FFB2";
-}
-
 function loadSPC(){
   if(spcLayer) map.removeLayer(spcLayer);
 
-  let base=`https://www.spc.noaa.gov/products/outlook/day${currentDay}`;
-
-  let url={
-    cat:`${base}otlk_cat.lyr.geojson`,
-    torn:`${base}otlk_torn.lyr.geojson`,
-    wind:`${base}otlk_wind.lyr.geojson`,
-    hail:`${base}otlk_hail.lyr.geojson`
-  }[currentLayer];
-
-  fetch(url)
+  fetch(`https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk_cat.lyr.geojson`)
     .then(r=>r.json())
     .then(data=>{
       spcLayer = L.geoJson(data,{
         style:f=>({
-          fillColor: currentLayer==="cat"
-            ? getCatColor(f.properties.LABEL)
-            : getProbColor(f.properties.DN),
-          color:"#333", weight:1, fillOpacity:0.5
+          fillColor:getCatColor(f.properties.LABEL),
+          fillOpacity:0.5,
+          color:"#333"
         }),
         onEachFeature:(f,l)=>{
           l.on("click",()=>{
@@ -301,7 +325,6 @@ function setDay(d){ currentDay=d; loadSPC(); }
 function openPanel(){
   document.getElementById("panel").classList.add("open");
 }
-
 function closePanel(){
   document.getElementById("panel").classList.remove("open");
 }
