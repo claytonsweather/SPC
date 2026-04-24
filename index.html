@@ -1,40 +1,11 @@
-function getSPCColor(f) {
-  const p = f.properties;
-
-  // --- CATEGORICAL (Day 1–3 CAT) ---
-  if (currentLayer === "cat") {
-    const catColors = {
-      "TSTM": "#A8E6A3",
-      "MRGL": "#5CC85C",
-      "SLGT": "#FFD84D",
-      "ENH": "#FF9A3D",
-      "MDT": "#FF4C4C",
-      "HIGH": "#FF00FF"
-    };
-    return catColors[p.LABEL] || "#888";
-  }
-
-  // --- PROBABILITY (TORN/WIND/HAIL) ---
-  const prob = p.DN || p.PROB;
-
-  const probColors = {
-    "2": "#A8E6A3",
-    "5": "#5CC85C",
-    "10": "#FFD84D",
-    "15": "#FF9A3D",
-    "30": "#FF4C4C",
-    "45": "#FF00FF",
-    "60": "#912CEE"
-  };
-
-  return probColors[prob] || "#888";
-}<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
   <title>⚡ Clayton's Weather Storm Center</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet.pattern/leaflet.pattern.js"></script>
 
   <style>
     body {
@@ -537,38 +508,73 @@ let spcLayer;
 let currentLayer = "cat";
 let currentDay = 1;
 
+// ================= COLORS =================
 function getSPCColor(f) {
   const p = f.properties;
 
-  // --- CATEGORICAL (Day 1–3 CAT) ---
+  const label = (p.LABEL || "").toUpperCase().trim();
+  const prob = String(p.DN || p.PROB || "").trim();
+
+  // --- CATEGORICAL ---
   if (currentLayer === "cat") {
-    const catColors = {
-      "TSTM": "#A8E6A3",
-      "MRGL": "#5CC85C",
-      "SLGT": "#FFD84D",
-      "ENH": "#FF9A3D",
-      "MDT": "#FF4C4C",
-      "HIGH": "#FF00FF"
-    };
-    return catColors[p.LABEL] || "#888";
+    switch (label) {
+      case "TSTM": return "#A8E6A3";
+      case "MRGL": return "#5CC85C";
+      case "SLGT": return "#FFD84D";
+      case "ENH":  return "#FF9A3D";
+      case "MDT":  return "#FF4C4C";
+      case "HIGH": return "#FF00FF";
+      default: return "transparent";
+    }
   }
 
-  // --- PROBABILITY (TORN/WIND/HAIL) ---
-  const prob = p.DN || p.PROB;
-
-  const probColors = {
-    "2": "#A8E6A3",
-    "5": "#5CC85C",
-    "10": "#FFD84D",
-    "15": "#FF9A3D",
-    "30": "#FF4C4C",
-    "45": "#FF00FF",
-    "60": "#912CEE"
-  };
-
-  return probColors[prob] || "#888";
+  // --- PROBABILITY ---
+  switch (prob) {
+    case "2": return "#A8E6A3";
+    case "5": return "#5CC85C";
+    case "10": return "#FFD84D";
+    case "15": return "#FF9A3D";
+    case "30": return "#FF4C4C";
+    case "45": return "#FF00FF";
+    case "60": return "#912CEE";
+    default: return "transparent";
+  }
 }
-  
+
+// ================= HATCH (SIGNIFICANT) =================
+function isSignificant(f) {
+  const p = f.properties;
+
+  // SPC uses SIG or hatch indicators
+  return (
+    p.SIG === "SIG" ||
+    p.SIG === "SIGN" ||
+    p.LABEL?.includes("SIG") ||
+    p.DESC?.toLowerCase().includes("significant")
+  );
+}
+
+function getHatchStyle(f) {
+  if (!isSignificant(f)) return null;
+
+  return {
+    fillPattern: stripesPattern,
+    fillOpacity: 0.6
+  };
+}
+
+// Create stripe pattern (SPC-style hatch)
+const stripesPattern = new L.StripePattern({
+  weight: 2,
+  spaceWeight: 2,
+  color: "#000000",
+  spaceColor: "transparent",
+  opacity: 0.5,
+  angle: 45
+});
+stripesPattern.addTo(map);
+
+// ================= LOAD SPC =================
 async function loadSPC() {
   if (spcLayer) map.removeLayer(spcLayer);
 
@@ -576,7 +582,6 @@ async function loadSPC() {
 
   let url;
 
-  // Correct SPC file selection
   if (currentLayer === "cat") {
     url = `https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk_cat.lyr.geojson`;
   } else if (currentLayer === "torn") {
@@ -592,26 +597,37 @@ async function loadSPC() {
     const data = await res.json();
 
     spcLayer = L.geoJson(data, {
-      style: f => ({
-        fillColor: getSPCColor(f),
-        fillOpacity: 0.4,
-        color: "#222",
-        weight: 1
-      }),
+      style: f => {
+        const baseStyle = {
+          fillColor: getSPCColor(f),
+          fillOpacity: currentLayer === "cat" ? 0.35 : 0.45,
+          color: "#222",
+          weight: 1
+        };
+
+        const hatch = getHatchStyle(f);
+
+        return hatch ? { ...baseStyle, ...hatch } : baseStyle;
+      },
+
       onEachFeature: (f, l) => {
         l.on("click", () => {
           openPanel();
           loadSPCText();
         });
       }
+
     }).addTo(map);
 
     updateHUD(`SPC Day ${currentDay} ${currentLayer.toUpperCase()} loaded`);
+
   } catch (e) {
     updateHUD(`SPC load failed`);
+    console.error(e);
   }
 }
 
+// ================= TEXT =================
 async function loadSPCText() {
   try {
     const res = await fetch(
@@ -624,33 +640,30 @@ async function loadSPCText() {
   }
 }
 
+// ================= BUTTON HANDLERS =================
 function setLayer(layer) {
   currentLayer = layer;
-  
-  // Update button states
-  document.querySelectorAll('[id^="btn-"]').forEach(btn => {
-    if (btn.id.startsWith('btn-cat') || btn.id.startsWith('btn-torn') || 
-        btn.id.startsWith('btn-wind') || btn.id.startsWith('btn-hail')) {
-      btn.classList.remove('active');
-    }
+
+  ["cat", "torn", "wind", "hail"].forEach(l => {
+    document.getElementById(`btn-${l}`).classList.remove("active");
   });
-  document.getElementById(`btn-${layer}`).classList.add('active');
-  
+
+  document.getElementById(`btn-${layer}`).classList.add("active");
+
   loadSPC();
 }
 
 function setDay(day) {
   currentDay = day;
-  
-  // Update button states
-  ['day1', 'day2', 'day3'].forEach(d => {
-    document.getElementById(`btn-${d}`).classList.remove('active');
+
+  [1, 2, 3].forEach(d => {
+    document.getElementById(`btn-day${d}`).classList.remove("active");
   });
-  document.getElementById(`btn-day${day}`).classList.add('active');
-  
+
+  document.getElementById(`btn-day${day}`).classList.add("active");
+
   loadSPC();
 }
-
 // ================= UI HELPERS =================
 function updateHUD(message) {
   document.getElementById("hud").innerHTML = message;
