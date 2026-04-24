@@ -1,110 +1,230 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CW Storm Center</title>
+  <title>⚡ Clayton's Weather Storm Center</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
   <style>
-    body { margin:0; font-family:-apple-system; background:#0b1e3c; }
-    #map { height:100vh; }
-
-    .topbar {
-      position:absolute; top:10px; left:50%;
-      transform:translateX(-50%);
-      background:#0d3c8f; color:white;
-      padding:8px 16px; border-radius:12px;
-      z-index:1000;
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b1726;
     }
 
-    /* 🔥 COLLAPSIBLE SIDEBAR */
+    #map {
+      height: 100vh;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-size: 16px;
+      font-weight: 600;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .status {
+      margin-left: auto;
+      font-size: 12px;
+      opacity: 0.7;
+      font-weight: 400;
+    }
+
+    /* COLLAPSIBLE SIDEBAR */
     .controls {
-      position:absolute;
-      top:60px;
-      left:10px;
-      background:rgba(10,30,70,0.95);
-      padding:8px;
-      border-radius:12px;
-      z-index:1000;
-      width:150px;
-      color:white;
-      font-size:12px;
-      transition:0.3s;
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      background: rgba(15, 23, 42, 0.95);
+      padding: 12px;
+      border-radius: 12px;
+      z-index: 1000;
+      width: 180px;
+      color: white;
+      font-size: 13px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
     .controls.collapsed {
-      width:45px;
-      height:45px;
-      overflow:hidden;
-      padding:6px;
+      width: 45px;
+      height: 45px;
+      overflow: hidden;
+      padding: 8px;
     }
 
     .toggle-btn {
-      background:#1a4db3;
-      border:none;
-      color:white;
-      width:100%;
-      padding:6px;
-      border-radius:6px;
-      margin-bottom:6px;
-      cursor:pointer;
-      font-size:14px;
+      background: #1e40af;
+      border: none;
+      color: white;
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: background 0.2s;
     }
 
-    button {
-      width:100%;
-      margin:3px 0;
-      padding:6px;
-      border:none;
-      border-radius:6px;
-      background:#1c3f80;
-      color:white;
-      font-size:12px;
-      cursor:pointer;
+    .toggle-btn:hover {
+      background: #2563eb;
+    }
+
+    .controls button {
+      width: 100%;
+      margin: 4px 0;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      background: #1e293b;
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .controls button:hover {
+      background: #334155;
+    }
+
+    .controls button.active {
+      background: #1e40af;
+    }
+
+    .controls hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      margin: 8px 0;
+    }
+
+    .controls label {
+      display: block;
+      margin: 8px 0 4px;
+      font-size: 11px;
+      opacity: 0.8;
     }
 
     .slider {
-      width:100%;
+      width: 100%;
     }
 
-    .timestamp {
-      position:absolute;
-      bottom:10px;
-      left:50%;
-      transform:translateX(-50%);
-      background:rgba(0,0,0,0.6);
-      color:white;
-      padding:4px 10px;
-      border-radius:8px;
-      font-size:12px;
-      z-index:1000;
+    /* HUD */
+    .hud {
+      position: absolute;
+      bottom: 90px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      z-index: 1000;
+      line-height: 1.5;
     }
 
+    /* TIMELINE SLIDER */
+    .slider-container {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 85%;
+      max-width: 700px;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 12px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #1e293b;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: none;
+    }
+
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+
+    /* SIDE PANEL */
     .panel {
-      position:fixed;
-      top:0;
-      right:-100%;
-      width:100%;
-      max-width:360px;
-      height:100%;
-      background:#0b1e3c;
-      color:white;
-      transition:0.3s;
-      z-index:2000;
-      padding:12px;
-      overflow-y:auto;
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 100%;
+      max-width: 400px;
+      height: 100%;
+      background: #0f172a;
+      color: white;
+      transition: right 0.3s;
+      z-index: 2000;
+      padding: 16px;
+      overflow-y: auto;
+      box-shadow: -4px 0 12px rgba(0,0,0,0.5);
     }
 
-    .panel.open { right:0; }
+    .panel.open {
+      right: 0;
+    }
 
     .close-btn {
-      float:right;
-      background:red;
-      color:white;
-      border:none;
-      padding:6px;
+      float: right;
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .close-btn:hover {
+      background: #b91c1c;
+    }
+
+    #text {
+      white-space: pre-wrap;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 40px;
     }
 
     .fronts-blend {
@@ -115,221 +235,402 @@
 </head>
 <body>
 
-<div class="topbar">⚡ CW Storm Center</div>
+<div class="topbar">
+  ⚡ Clayton's Weather Storm Center
+  <div class="status">NOAA NEXRAD • SPC Outlooks</div>
+</div>
 
 <div class="controls collapsed" id="controls">
   <button class="toggle-btn" onclick="toggleControls()">☰</button>
 
-  <button onclick="setLayer('cat')">SPC Cat</button>
-  <button onclick="setLayer('torn')">Tornado</button>
-  <button onclick="setLayer('wind')">Wind</button>
-  <button onclick="setLayer('hail')">Hail</button>
+  <div id="layerButtons">
+    <button id="btn-cat" onclick="setLayer('cat')" class="active">SPC Cat</button>
+    <button id="btn-torn" onclick="setLayer('torn')">Tornado</button>
+    <button id="btn-wind" onclick="setLayer('wind')">Wind</button>
+    <button id="btn-hail" onclick="setLayer('hail')">Hail</button>
 
-  <button onclick="setDay(1)">Day 1</button>
-  <button onclick="setDay(2)">Day 2</button>
-  <button onclick="setDay(3)">Day 3</button>
+    <hr>
 
-  <hr>
+    <button id="btn-day1" onclick="setDay(1)" class="active">Day 1</button>
+    <button id="btn-day2" onclick="setDay(2)">Day 2</button>
+    <button id="btn-day3" onclick="setDay(3)">Day 3</button>
 
-  <button onclick="toggleRadar()">Radar</button>
+    <hr>
 
-  <label>Opacity</label>
-  <input type="range" min="0.1" max="1" step="0.05" value="0.45"
-    class="slider" oninput="setRadarOpacity(this.value)">
+    <button id="btn-radar" onclick="toggleRadar()">Radar: OFF</button>
 
-  <button onclick="toggleWarnings()">Alerts</button>
-  <button onclick="toggleFronts()">Fronts</button>
-</div>
+    <label>Radar Opacity</label>
+    <input type="range" min="0.3" max="1" step="0.05" value="0.7"
+      class="slider" oninput="setRadarOpacity(this.value)">
 
-<div id="timestamp" class="timestamp">Radar Time</div>
+    <hr>
 
-<div id="panel" class="panel">
-  <button class="close-btn" onclick="closePanel()">X</button>
-  <pre id="text">Click SPC or alerts...</pre>
+    <button id="btn-warnings" onclick="toggleWarnings()">Alerts: OFF</button>
+    <button id="btn-fronts" onclick="toggleFronts()">Fronts: OFF</button>
+  </div>
 </div>
 
 <div id="map"></div>
 
+<div class="hud" id="hud">Initializing...</div>
+
+<div class="slider-container" id="sliderContainer" style="display:none;">
+  <input type="range" id="slider" min="0" max="0" value="0">
+  <div class="time-labels">
+    <span>Past</span>
+    <span>Now</span>
+  </div>
+</div>
+
+<div id="panel" class="panel">
+  <button class="close-btn" onclick="closePanel()">✕ Close</button>
+  <pre id="text">Click on SPC outlooks or alerts to view details...</pre>
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-var map = L.map('map').setView([37.8,-96],4);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+// ================= MAP INIT =================
+const map = L.map('map', {
+  zoomSnap: 0.25,
+  zoomDelta: 0.25,
+  minZoom: 3,
+  maxZoom: 18
+}).setView([37.8, -96], 4);
 
-// ================= COLLAPSE =================
-function toggleControls(){
+L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+).addTo(map);
+
+// ================= CONTROLS =================
+function toggleControls() {
   document.getElementById("controls").classList.toggle("collapsed");
 }
 
 // ================= RADAR =================
-let radarLayers = [];
+let radarLayer;
 let radarFrames = [];
-let radarIndex = 0;
-let radarOpacity = 0.45;
+let currentIndex = 0;
+let targetIndex = 0;
+let isDragging = false;
 let radarOn = false;
-let radarInterval;
+let radarOpacity = 0.7;
+let animationFrame;
 
-function loadRadar(){
-  fetch("https://api.rainviewer.com/public/weather-maps.json")
-    .then(r => r.json())
-    .then(data => {
-
-      radarFrames = data.radar.past.slice(-8);
-
-      radarLayers = radarFrames.map(frame =>
-        L.tileLayer(
-          `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
-          { opacity: 0, zIndex: 1000 }
-        )
-      );
-
-      radarLayers.forEach(l => l.addTo(map));
-
-      radarLayers[0].setOpacity(radarOpacity);
-      updateTimestamp();
-
-      radarInterval = setInterval(() => {
-        radarLayers[radarIndex].setOpacity(0);
-        radarIndex = (radarIndex + 1) % radarLayers.length;
-        radarLayers[radarIndex].setOpacity(radarOpacity);
-        updateTimestamp();
-      }, 500);
-    });
-}
-
-function updateTimestamp(){
-  let ts = radarFrames[radarIndex].time;
-  let date = new Date(ts * 1000);
-  document.getElementById("timestamp").textContent =
-    "Radar: " + date.toLocaleTimeString();
-}
-
-function setRadarOpacity(val){
-  radarOpacity = val;
-  radarLayers.forEach(l => l.setOpacity(0));
-  if(radarLayers[radarIndex]){
-    radarLayers[radarIndex].setOpacity(radarOpacity);
-  }
-}
-
-function toggleRadar(){
-  if(radarOn){
-    radarLayers.forEach(l => map.removeLayer(l));
-    clearInterval(radarInterval);
+async function toggleRadar() {
+  const btn = document.getElementById("btn-radar");
+  
+  if (radarOn) {
+    if (radarLayer) map.removeLayer(radarLayer);
+    document.getElementById("sliderContainer").style.display = "none";
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    radarOn = false;
+    btn.textContent = "Radar: OFF";
+    btn.classList.remove("active");
+    updateHUD("Radar disabled");
   } else {
-    loadRadar();
+    await loadRadar();
+    radarOn = true;
+    btn.textContent = "Radar: ON";
+    btn.classList.add("active");
   }
-  radarOn = !radarOn;
+}
+
+async function loadRadar() {
+  updateHUD("Loading radar frames...");
+  
+  const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+  const data = await res.json();
+
+  radarFrames = [
+    ...data.radar.past.slice(-12),
+    ...data.radar.nowcast
+  ];
+
+  radarLayer = L.tileLayer.wms(
+    "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi",
+    {
+      layers: "nexrad-n0r-900913",
+      format: "image/png",
+      transparent: true,
+      opacity: radarOpacity,
+      updateWhenIdle: true,
+      updateWhenZooming: false
+    }
+  ).addTo(map);
+
+  setupSlider();
+  startRadarAnimation();
+  document.getElementById("sliderContainer").style.display = "block";
+}
+
+function setupSlider() {
+  const slider = document.getElementById("slider");
+  slider.max = radarFrames.length - 1;
+  slider.value = radarFrames.length - 1;
+  targetIndex = radarFrames.length - 1;
+
+  slider.addEventListener("input", e => {
+    isDragging = true;
+    targetIndex = parseInt(e.target.value);
+  });
+
+  slider.addEventListener("change", () => {
+    isDragging = false;
+  });
+}
+
+function setRadarFrame(i) {
+  const frame = radarFrames[i];
+  if (!frame) return;
+
+  // REAL timestamp from RainViewer
+  const date = new Date(frame.time * 1000);
+
+  const timeStr = date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const dateStr = date.toLocaleDateString();
+
+  updateHUD(`
+    Radar Time: ${timeStr}<br>
+    Date: ${dateStr}<br>
+    Frame: ${i + 1}/${radarFrames.length}
+  `);
+
+  // NOTE: WMS does NOT support time stepping → just refresh
+  radarLayer.redraw();
+}
+
+function startRadarAnimation() {
+  function animate() {
+    currentIndex += (targetIndex - currentIndex) * 0.16;
+    const displayIndex = Math.round(currentIndex);
+    setRadarFrame(displayIndex);
+    animationFrame = requestAnimationFrame(animate);
+  }
+  animate();
+
+  // Auto-advance
+  setInterval(() => {
+    if (!isDragging && radarOn) {
+      targetIndex = (targetIndex + 1) % radarFrames.length;
+      document.getElementById("slider").value = targetIndex;
+    }
+  }, 600);
+}
+
+function setRadarOpacity(val) {
+  radarOpacity = parseFloat(val);
+  if (radarLayer) {
+    radarLayer.setOpacity(radarOpacity);
+  }
 }
 
 // ================= WARNINGS =================
-let warningsLayer, warningsOn=false;
+let warningsLayer;
+let warningsOn = false;
 
-function toggleWarnings(){
-  if(warningsOn){
-    map.removeLayer(warningsLayer);
-    warningsOn=false;
-    return;
+async function toggleWarnings() {
+  const btn = document.getElementById("btn-warnings");
+  
+  if (warningsOn) {
+    if (warningsLayer) map.removeLayer(warningsLayer);
+    warningsOn = false;
+    btn.textContent = "Alerts: OFF";
+    btn.classList.remove("active");
+  } else {
+    updateHUD("Loading active alerts...");
+    
+    const res = await fetch("https://api.weather.gov/alerts/active");
+    const data = await res.json();
+    
+    warningsLayer = L.geoJson(data, {
+      style: { color: "#ef4444", weight: 2, fillOpacity: 0.2 },
+      onEachFeature: (f, l) => {
+        l.on("click", () => {
+          openPanel();
+          document.getElementById("text").textContent =
+            `${f.properties.event}\n\n${f.properties.description}`;
+        });
+      }
+    }).addTo(map);
+    
+    warningsOn = true;
+    btn.textContent = "Alerts: ON";
+    btn.classList.add("active");
+    updateHUD(`Active alerts loaded`);
   }
-
-  fetch("https://api.weather.gov/alerts/active")
-    .then(r=>r.json())
-    .then(data=>{
-      warningsLayer = L.geoJson(data,{
-        style:{color:"red",weight:2,fillOpacity:0.15},
-        onEachFeature:(f,l)=>{
-          l.on("click", ()=>{
-            openPanel();
-            document.getElementById("text").textContent =
-              f.properties.event + "\n\n" + f.properties.description;
-          });
-        }
-      }).addTo(map);
-      warningsOn=true;
-    });
 }
 
 // ================= FRONTS =================
-let frontsLayer, frontsOn=false;
+let frontsLayer;
+let frontsOn = false;
 let frontsInterval;
 
-function toggleFronts(){
-  if(frontsOn){
-    map.removeLayer(frontsLayer);
+function toggleFronts() {
+  const btn = document.getElementById("btn-fronts");
+  
+  if (frontsOn) {
+    if (frontsLayer) map.removeLayer(frontsLayer);
     clearInterval(frontsInterval);
+    frontsOn = false;
+    btn.textContent = "Fronts: OFF";
+    btn.classList.remove("active");
   } else {
-
-    let bounds = [[22,-125],[52,-65]];
-
-    function loadFronts(){
-      if(frontsLayer) map.removeLayer(frontsLayer);
-
-      frontsLayer = L.imageOverlay(
-        "https://www.wpc.ncep.noaa.gov/sfc/usfntsfcwbg.gif?" + Date.now(),
-        bounds,
-        { className:"fronts-blend", zIndex:500 }
-      ).addTo(map);
-    }
-
     loadFronts();
-    frontsInterval = setInterval(loadFronts, 300000);
+    frontsInterval = setInterval(loadFronts, 300000); // 5 min
+    frontsOn = true;
+    btn.textContent = "Fronts: ON";
+    btn.classList.add("active");
   }
-  frontsOn = !frontsOn;
 }
 
-// ================= SPC =================
+function loadFronts() {
+  if (frontsLayer) map.removeLayer(frontsLayer);
+
+  const bounds = [[22, -125], [52, -65]];
+  frontsLayer = L.imageOverlay(
+    "https://www.wpc.ncep.noaa.gov/sfc/usfntsfcwbg.gif?" + Date.now(),
+    bounds,
+    { className: "fronts-blend", zIndex: 500 }
+  ).addTo(map);
+  
+  updateHUD("Weather fronts updated");
+}
+
+// ================= SPC OUTLOOKS =================
 let spcLayer;
-let currentLayer="cat";
-let currentDay=1;
+let currentLayer = "cat";
+let currentDay = 1;
 
-function getCatColor(l){
-  return {"TSTM":"#A8E6A3","MRGL":"#5CC85C","SLGT":"#FFD84D",
-  "ENH":"#FF9A3D","MDT":"#FF4C4C","HIGH":"#FF00FF"}[l]||"transparent";
+function getSPCColor(f) {
+  const p = f.properties;
+
+  const prob = p.DN || p.PROB || p.LABEL;
+
+  const colors = {
+    "2": "#A8E6A3",
+    "5": "#5CC85C",
+    "10": "#FFD84D",
+    "15": "#FF9A3D",
+    "30": "#FF4C4C",
+    "45": "#FF00FF",
+    "60": "#912CEE"
+  };
+
+  const catColors = {
+    "TSTM": "#A8E6A3",
+    "MRGL": "#5CC85C",
+    "SLGT": "#FFD84D",
+    "ENH": "#FF9A3D",
+    "MDT": "#FF4C4C",
+    "HIGH": "#FF00FF"
+  };
+
+  return colors[prob] || catColors[prob] || "#888";
+}
+  
+async function loadSPC() {
+  if (spcLayer) map.removeLayer(spcLayer);
+
+  updateHUD(`Loading SPC Day ${currentDay} ${currentLayer.toUpperCase()}...`);
+
+  let url;
+
+  // Correct SPC file selection
+  if (currentLayer === "cat") {
+    url = `https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk_cat.lyr.geojson`;
+  } else if (currentLayer === "torn") {
+    url = `https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk_torn.lyr.geojson`;
+  } else if (currentLayer === "wind") {
+    url = `https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk_wind.lyr.geojson`;
+  } else if (currentLayer === "hail") {
+    url = `https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk_hail.lyr.geojson`;
+  }
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    spcLayer = L.geoJson(data, {
+      style: f => ({
+        fillColor: getSPCColor(f),
+        fillOpacity: 0.4,
+        color: "#222",
+        weight: 1
+      }),
+      onEachFeature: (f, l) => {
+        l.on("click", () => {
+          openPanel();
+          loadSPCText();
+        });
+      }
+    }).addTo(map);
+
+    updateHUD(`SPC Day ${currentDay} ${currentLayer.toUpperCase()} loaded`);
+  } catch (e) {
+    updateHUD(`SPC load failed`);
+  }
 }
 
-function loadSPC(){
-  if(spcLayer) map.removeLayer(spcLayer);
-
-  fetch(`https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk_cat.lyr.geojson`)
-    .then(r=>r.json())
-    .then(data=>{
-      spcLayer = L.geoJson(data,{
-        style:f=>({
-          fillColor:getCatColor(f.properties.LABEL),
-          fillOpacity:0.5,
-          color:"#333"
-        }),
-        onEachFeature:(f,l)=>{
-          l.on("click",()=>{
-            openPanel();
-            loadText();
-          });
-        }
-      }).addTo(map);
-    });
+async function loadSPCText() {
+  try {
+    const res = await fetch(
+      `https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk.txt`
+    );
+    const text = await res.text();
+    document.getElementById("text").textContent = text;
+  } catch (e) {
+    document.getElementById("text").textContent = "Error loading outlook text";
+  }
 }
 
-function loadText(){
-  fetch(`https://www.spc.noaa.gov/products/outlook/day${currentDay}otlk.txt`)
-    .then(r=>r.text())
-    .then(t=>{
-      document.getElementById("text").textContent=t;
-    });
+function setLayer(layer) {
+  currentLayer = layer;
+  
+  // Update button states
+  document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+    if (btn.id.startsWith('btn-cat') || btn.id.startsWith('btn-torn') || 
+        btn.id.startsWith('btn-wind') || btn.id.startsWith('btn-hail')) {
+      btn.classList.remove('active');
+    }
+  });
+  document.getElementById(`btn-${layer}`).classList.add('active');
+  
+  loadSPC();
 }
 
-function setLayer(l){ currentLayer=l; loadSPC(); }
-function setDay(d){ currentDay=d; loadSPC(); }
+function setDay(day) {
+  currentDay = day;
+  
+  // Update button states
+  ['day1', 'day2', 'day3'].forEach(d => {
+    document.getElementById(`btn-${d}`).classList.remove('active');
+  });
+  document.getElementById(`btn-day${day}`).classList.add('active');
+  
+  loadSPC();
+}
 
-// ================= UI =================
-function openPanel(){
+// ================= UI HELPERS =================
+function updateHUD(message) {
+  document.getElementById("hud").innerHTML = message;
+}
+
+function openPanel() {
   document.getElementById("panel").classList.add("open");
 }
-function closePanel(){
+
+function closePanel() {
   document.getElementById("panel").classList.remove("open");
 }
 
-// INIT
+// ================= INIT =================
+updateHUD("Ready • Click controls to activate layers");
 loadSPC();
 
 </script>
