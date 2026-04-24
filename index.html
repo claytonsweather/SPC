@@ -1,4 +1,34 @@
-<!DOCTYPE html>
+function getSPCColor(f) {
+  const p = f.properties;
+
+  // --- CATEGORICAL (Day 1–3 CAT) ---
+  if (currentLayer === "cat") {
+    const catColors = {
+      "TSTM": "#A8E6A3",
+      "MRGL": "#5CC85C",
+      "SLGT": "#FFD84D",
+      "ENH": "#FF9A3D",
+      "MDT": "#FF4C4C",
+      "HIGH": "#FF00FF"
+    };
+    return catColors[p.LABEL] || "#888";
+  }
+
+  // --- PROBABILITY (TORN/WIND/HAIL) ---
+  const prob = p.DN || p.PROB;
+
+  const probColors = {
+    "2": "#A8E6A3",
+    "5": "#5CC85C",
+    "10": "#FFD84D",
+    "15": "#FF9A3D",
+    "30": "#FF4C4C",
+    "45": "#FF00FF",
+    "60": "#912CEE"
+  };
+
+  return probColors[prob] || "#888";
+}<!DOCTYPE html>
 <html>
 <head>
   <title>⚡ Clayton's Weather Storm Center</title>
@@ -510,9 +540,23 @@ let currentDay = 1;
 function getSPCColor(f) {
   const p = f.properties;
 
-  const prob = p.DN || p.PROB || p.LABEL;
+  // --- CATEGORICAL (Day 1–3 CAT) ---
+  if (currentLayer === "cat") {
+    const catColors = {
+      "TSTM": "#A8E6A3",
+      "MRGL": "#5CC85C",
+      "SLGT": "#FFD84D",
+      "ENH": "#FF9A3D",
+      "MDT": "#FF4C4C",
+      "HIGH": "#FF00FF"
+    };
+    return catColors[p.LABEL] || "#888";
+  }
 
-  const colors = {
+  // --- PROBABILITY (TORN/WIND/HAIL) ---
+  const prob = p.DN || p.PROB;
+
+  const probColors = {
     "2": "#A8E6A3",
     "5": "#5CC85C",
     "10": "#FFD84D",
@@ -522,16 +566,7 @@ function getSPCColor(f) {
     "60": "#912CEE"
   };
 
-  const catColors = {
-    "TSTM": "#A8E6A3",
-    "MRGL": "#5CC85C",
-    "SLGT": "#FFD84D",
-    "ENH": "#FF9A3D",
-    "MDT": "#FF4C4C",
-    "HIGH": "#FF00FF"
-  };
-
-  return colors[prob] || catColors[prob] || "#888";
+  return probColors[prob] || "#888";
 }
   
 async function loadSPC() {
